@@ -27,45 +27,67 @@ function Loader() {
     );
 }
 
-function CameraHandler({ viewIndex, distance, onInteraction }) {
+function CameraHandler({ viewIndex, viewMode, distance, onInteraction }) {
     const { camera } = useThree();
     const controlsRef = useRef();
     const isTransitioning = useRef(false);
     const lastIndex = useRef(viewIndex);
+    const lastMode = useRef(viewMode);
 
     useEffect(() => {
-        if (viewIndex !== lastIndex.current) {
+        if (viewIndex !== lastIndex.current || viewMode !== lastMode.current) {
             isTransitioning.current = true;
             lastIndex.current = viewIndex;
+            lastMode.current = viewMode;
+
+            // On any mode transition, we should also transition the target back to center
+            // but for immediate fix, we can just snap it here if not already transitioning
+            // Let's handle it inside useFrame for smoothness
         }
-    }, [viewIndex]);
+    }, [viewIndex, viewMode]);
 
     useFrame((state, delta) => {
         if (!controlsRef.current) return;
 
         if (isTransitioning.current) {
+            let targetAzimuth, targetPolar;
+            const targetCenter = new THREE.Vector3(0, 0, 0);
+
+            if (viewMode === 'interior') {
+                targetAzimuth = controlsRef.current.getAzimuthalAngle();
+                targetPolar = 0.05;
+            } else {
+                targetAzimuth = VIEWPOINTS_AZIMUTH[viewIndex];
+                targetPolar = Math.PI * 0.35;
+            }
+
             const currentAzimuth = controlsRef.current.getAzimuthalAngle();
-            const target = VIEWPOINTS_AZIMUTH[viewIndex];
+            const currentPolar = controlsRef.current.getPolarAngle();
+            const currentTarget = controlsRef.current.target;
 
-            let diff = target - currentAzimuth;
-            while (diff < -Math.PI) diff += Math.PI * 2;
-            while (diff > Math.PI) diff -= Math.PI * 2;
+            let aziDiff = targetAzimuth - currentAzimuth;
+            while (aziDiff < -Math.PI) aziDiff += Math.PI * 2;
+            while (aziDiff > Math.PI) aziDiff -= Math.PI * 2;
 
-            // If very close, stop transitioning
-            if (Math.abs(diff) < 0.01) {
+            const polDiff = targetPolar - currentPolar;
+            const centerDiff = targetCenter.clone().sub(currentTarget);
+
+            if (Math.abs(aziDiff) < 0.001 && Math.abs(polDiff) < 0.001 && centerDiff.length() < 0.01) {
                 isTransitioning.current = false;
+                controlsRef.current.target.set(0, 0, 0);
                 return;
             }
 
-            const step = diff * delta * 4;
-            const newAzimuth = currentAzimuth + step;
+            const lerpFactor = delta * 3;
+            const newAzimuth = currentAzimuth + aziDiff * lerpFactor;
+            const newPolar = currentPolar + polDiff * lerpFactor;
 
-            const polar = controlsRef.current.getPolarAngle();
+            controlsRef.current.target.lerp(targetCenter, lerpFactor);
+
             const r = distance;
-
-            camera.position.x = controlsRef.current.target.x + r * Math.sin(polar) * Math.sin(newAzimuth);
-            camera.position.y = controlsRef.current.target.y + r * Math.cos(polar);
-            camera.position.z = controlsRef.current.target.z + r * Math.sin(polar) * Math.cos(newAzimuth);
+            camera.position.x = controlsRef.current.target.x + r * Math.sin(newPolar) * Math.sin(newAzimuth);
+            camera.position.y = controlsRef.current.target.y + r * Math.cos(newPolar);
+            camera.position.z = controlsRef.current.target.z + r * Math.sin(newPolar) * Math.cos(newAzimuth);
 
             controlsRef.current.update();
         }
@@ -74,11 +96,12 @@ function CameraHandler({ viewIndex, distance, onInteraction }) {
     return (
         <OrbitControls
             ref={controlsRef}
-            enableZoom={false} // Disable zoom as requested
+            enableZoom={false}
             enablePan={true}
-            minPolarAngle={10 * Math.PI / 180} // Allow slight tilt but avoid bottom
-            maxPolarAngle={Math.PI * 0.55}
-            minDistance={distance} // Lock distance to the calculated fit
+            screenSpacePanning={true}
+            minPolarAngle={viewMode === 'interior' ? 0.01 : 10 * Math.PI / 180}
+            maxPolarAngle={viewMode === 'interior' ? 0.01 : Math.PI * 0.55}
+            minDistance={distance}
             maxDistance={distance}
             onStart={() => {
                 isTransitioning.current = false;
@@ -89,73 +112,108 @@ function CameraHandler({ viewIndex, distance, onInteraction }) {
     );
 }
 
-function Model({ url, onLoaded }) {
+function AnimatedModel({ url, visible = true, onLoaded }) {
     const { scene } = useGLTF(url);
+    const groupRef = useRef();
+    const [shouldRender, setShouldRender] = useState(visible);
+
     useEffect(() => {
-        if (scene) onLoaded(scene);
+        if (scene && onLoaded) onLoaded(scene);
     }, [scene, onLoaded]);
-    return <primitive object={scene} />;
+
+    useFrame((state, delta) => {
+        if (!groupRef.current) return;
+
+        // Target Y position: 0 when visible, 2 when hidden (slides up)
+        const targetY = visible ? 0 : 2;
+        const targetOpacity = visible ? 1 : 0;
+
+        groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, delta * 4);
+
+        // Handle actual rendering lifecycle to prevent shadows from hidden objects
+        if (!visible && groupRef.current.position.y > 1.9) {
+            setShouldRender(false);
+        } else if (visible) {
+            setShouldRender(true);
+        }
+    });
+
+    return (
+        <group ref={groupRef}>
+            {shouldRender && <primitive object={scene} />}
+        </group>
+    );
 }
 
-const ModelViewer = ({ viewIndex = 0 }) => {
+function Model({ url, visible = true, onLoaded }) {
+    const { scene } = useGLTF(url);
+    useEffect(() => {
+        if (scene && onLoaded) onLoaded(scene);
+    }, [scene, onLoaded]);
+    return <primitive object={scene} visible={visible} />;
+}
+
+const SceneContent = ({ viewMode, onHeightChange, onDistanceChange, isFitDone, setIsFitDone, cameraRef, modelHeight }) => {
+    const { size, camera: threeCamera } = useThree();
+
+    const handleModelLoaded = useMemo(() => (scene) => {
+        if (isFitDone) return;
+
+        const box = new THREE.Box3().setFromObject(scene);
+        const sizeBox = box.getSize(new THREE.Vector3());
+
+        const h = sizeBox.y;
+        onHeightChange(h);
+
+        const maxSize = Math.max(sizeBox.x, sizeBox.y, sizeBox.z);
+        const aspect = size.width / size.height;
+
+        const fov = threeCamera.fov * (Math.PI / 180);
+        const fitHeightDistance = maxSize / (2 * Math.tan(fov / 2));
+        const fitWidthDistance = fitHeightDistance / aspect;
+
+        const calculatedDistance = 1.5 * Math.max(fitHeightDistance, fitWidthDistance);
+        onDistanceChange(calculatedDistance);
+
+        if (cameraRef.current) {
+            const initialAzimuth = VIEWPOINTS_AZIMUTH[0];
+            const initialPolar = Math.PI * 0.35;
+
+            cameraRef.current.position.set(
+                calculatedDistance * Math.sin(initialPolar) * Math.sin(initialAzimuth),
+                calculatedDistance * Math.cos(initialPolar),
+                calculatedDistance * Math.sin(initialPolar) * Math.cos(initialAzimuth)
+            );
+            cameraRef.current.lookAt(0, 0, 0);
+        }
+        setIsFitDone(true);
+    }, [size.width, size.height, threeCamera.fov, isFitDone, onHeightChange, onDistanceChange, setIsFitDone, cameraRef]);
+
+    return (
+        <Suspense fallback={<Loader />}>
+            <Center key="main-center">
+                <Model url="/models/Base.glb" onLoaded={handleModelLoaded} />
+                <AnimatedModel
+                    url="/models/Base_Roof.glb"
+                    visible={viewMode === 'exterior'}
+                />
+            </Center>
+
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -modelHeight / 2 - 0.01, 0]} receiveShadow>
+                <planeGeometry args={[500, 500]} />
+                <shadowMaterial transparent opacity={0.1} />
+            </mesh>
+
+            <Environment preset="city" />
+        </Suspense>
+    );
+};
+
+const ModelViewer = ({ viewIndex = 0, viewMode = 'exterior' }) => {
     const cameraRef = useRef();
     const [cameraDistance, setCameraDistance] = useState(30);
     const [isFitDone, setIsFitDone] = useState(false);
-
-    // This component helps us access the Three.js state (size, aspect) inside the handler
-    const SceneSetup = () => {
-        const { size, camera } = useThree();
-
-        const handleModelLoaded = useMemo(() => (scene) => {
-            if (isFitDone) return;
-
-            const box = new THREE.Box3().setFromObject(scene);
-            const sizeBox = box.getSize(new THREE.Vector3());
-            const center = box.getCenter(new THREE.Vector3());
-
-            const maxSize = Math.max(sizeBox.x, sizeBox.y, sizeBox.z);
-            const aspect = size.width / size.height;
-
-            // Calculate distance to fit either width or height
-            const fov = camera.fov * (Math.PI / 180);
-            const fitHeightDistance = maxSize / (2 * Math.tan(fov / 2));
-            const fitWidthDistance = fitHeightDistance / aspect;
-
-            // Use a generous 1.5x multiplier to ensure it's not cutting corners
-            const distance = 1.5 * Math.max(fitHeightDistance, fitWidthDistance);
-
-            setCameraDistance(distance);
-
-            if (cameraRef.current) {
-                // Set initial top-down-ish angle
-                const initialAzimuth = VIEWPOINTS_AZIMUTH[0];
-                const initialPolar = Math.PI * 0.35;
-
-                cameraRef.current.position.set(
-                    distance * Math.sin(initialPolar) * Math.sin(initialAzimuth),
-                    distance * Math.cos(initialPolar),
-                    distance * Math.sin(initialPolar) * Math.cos(initialAzimuth)
-                );
-                cameraRef.current.lookAt(0, 0, 0);
-            }
-            setIsFitDone(true);
-        }, [size.width, size.height, camera.fov, isFitDone]);
-
-        return (
-            <Suspense fallback={<Loader />}>
-                <Center top>
-                    <Model url="/models/Base.glb" onLoaded={handleModelLoaded} />
-                </Center>
-
-                <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
-                    <planeGeometry args={[500, 500]} />
-                    <shadowMaterial transparent opacity={0.1} />
-                </mesh>
-
-                <Environment preset="city" />
-            </Suspense>
-        );
-    };
+    const [modelHeight, setModelHeight] = useState(0);
 
     return (
         <div className="w-full h-full cursor-grab active:cursor-grabbing">
@@ -171,9 +229,17 @@ const ModelViewer = ({ viewIndex = 0 }) => {
                 />
                 <pointLight position={[-15, 15, -15]} intensity={0.5} />
 
-                <SceneSetup />
+                <SceneContent
+                    viewMode={viewMode}
+                    onHeightChange={setModelHeight}
+                    onDistanceChange={setCameraDistance}
+                    isFitDone={isFitDone}
+                    setIsFitDone={setIsFitDone}
+                    cameraRef={cameraRef}
+                    modelHeight={modelHeight}
+                />
 
-                <CameraHandler viewIndex={viewIndex} distance={cameraDistance} />
+                <CameraHandler viewIndex={viewIndex} viewMode={viewMode} distance={cameraDistance} />
             </Canvas>
         </div>
     );

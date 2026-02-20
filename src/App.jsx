@@ -5,6 +5,7 @@ import { X, Home, Layers, Info, DollarSign, PenTool, PhoneCall, Building2, Chevr
 
 const App = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [viewMode, setViewMode] = useState('exterior'); // 'exterior' or 'interior'
   const [viewIndex, setViewIndex] = useState(0);
 
   const nextView = () => setViewIndex((prev) => (prev + 1) % 4);
@@ -37,45 +38,75 @@ const App = () => {
           {/* 2. 3D Container (Image 1 Parity: Sticky on mobile) */}
           <div className="relative h-[35dvh] md:h-full sticky top-0 md:relative bg-warm-neutral-light overflow-hidden shrink-0 group z-30">
             {/* Logo (Desktop Only) */}
-            <div className="absolute top-10 left-10 z-10 hidden md:block">
+            <div className="absolute top-10 left-10 z-[35] hidden md:block">
               <h1 className="text-2xl font-normal tracking-tight">Samara</h1>
             </div>
 
-            <ModelViewer viewIndex={viewIndex} />
-
-            {/* Navigation Arrows (Image 1 Parity: Visible ONLY above md) */}
-            <div className="hidden md:flex absolute inset-x-0 top-1/2 -translate-y-1/2 justify-between px-8 pointer-events-none z-20">
-              <button
-                onClick={prevView}
-                className="w-12 h-12 rounded-full bg-[#f2f2eb] shadow-lg border border-black/5 flex items-center justify-center pointer-events-auto transition-all cursor-pointer text-charcoal/60 hover:text-charcoal"
-                title="Previous View"
-              >
-                <ChevronLeft size={24} />
-              </button>
-              <button
-                onClick={nextView}
-                className="w-12 h-12 rounded-full bg-[#f2f2eb] shadow-lg border border-black/5 flex items-center justify-center pointer-events-auto transition-all cursor-pointer text-charcoal/60 hover:text-charcoal"
-                title="Next View"
-              >
-                <ChevronRight size={24} />
-              </button>
-            </div>
-
-            {/* Price (Image 1: Top of Canvas) */}
-            <div className="absolute top-5 md:top-auto md:bottom-20 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center text-center pointer-events-none w-full px-4 text-md md:text-lg">
-              <div className="pointer-events-auto">
-                <span className="font-normal text-charcoal  md:bg-[#edede7] md:px-6 md:py-2.5 md:rounded-full md:shadow-md md:border md:border-warm-neutral-dark">
-                  $285,000
-                  <span className="ml-1 text-muted-gray  font-normal">plus installation</span>
-                </span>
+            {/* View Mode Toggle (Fixed on top of canvas) */}
+            <div className="absolute top-4 md:top-10 left-1/2 -translate-x-1/2 z-[40] pointer-events-none">
+              <div className="flex bg-white/90 backdrop-blur-md p-0.5 md:p-1 rounded-full shadow-lg border border-black/5 pointer-events-auto">
+                <button
+                  onClick={() => { setViewMode('exterior'); setViewIndex(0); }}
+                  className={`px-4 py-1.5 md:px-6 md:py-2 rounded-full text-[13px] md:text-sm font-medium transition-all ${viewMode === 'exterior'
+                    ? 'bg-charcoal text-white shadow-sm'
+                    : 'text-charcoal/60 hover:text-charcoal hover:bg-black/5'
+                    }`}
+                >
+                  Exterior
+                </button>
+                <button
+                  onClick={() => setViewMode('interior')}
+                  className={`px-4 py-1.5 md:px-6 md:py-2 rounded-full text-[13px] md:text-sm font-medium transition-all ${viewMode === 'interior'
+                    ? 'bg-charcoal text-white shadow-sm'
+                    : 'text-charcoal/60 hover:text-charcoal hover:bg-black/5'
+                    }`}
+                >
+                  Interior
+                </button>
               </div>
             </div>
 
-            {/* Financing (Image 1: Bottom of Canvas) */}
-            <div className="absolute bottom-5 md:bottom-10 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 text-xs md:text-base text-muted-gray pointer-events-auto cursor-help">
-              <span>Financing options available.</span>
-              <Info size={14} className="opacity-60" />
-            </div>
+            <ModelViewer viewIndex={viewIndex} viewMode={viewMode} />
+
+            {/* Navigation Arrows (Exterior Only) */}
+            {viewMode === 'exterior' && (
+              <div className="hidden md:flex absolute inset-x-0 top-1/2 -translate-y-1/2 justify-between px-8 pointer-events-none z-20">
+                <button
+                  onClick={prevView}
+                  className="w-12 h-12 rounded-full bg-[#f2f2eb] shadow-lg border border-black/5 flex items-center justify-center pointer-events-auto transition-all cursor-pointer text-charcoal/60 hover:text-charcoal"
+                  title="Previous View"
+                >
+                  <ChevronLeft size={24} />
+                </button>
+                <button
+                  onClick={nextView}
+                  className="w-12 h-12 rounded-full bg-[#f2f2eb] shadow-lg border border-black/5 flex items-center justify-center pointer-events-auto transition-all cursor-pointer text-charcoal/60 hover:text-charcoal"
+                  title="Next View"
+                >
+                  <ChevronRight size={24} />
+                </button>
+              </div>
+            )}
+
+            {/* Price (Exterior Only & Desktop Only) */}
+            {viewMode === 'exterior' && (
+              <div className="hidden md:flex absolute md:bottom-20 left-1/2 -translate-x-1/2 z-10 flex-col items-center text-center pointer-events-none w-full px-4 text-md md:text-lg">
+                <div className="pointer-events-auto">
+                  <span className="font-normal text-charcoal md:bg-[#edede7] md:px-6 md:py-2.5 md:rounded-full md:shadow-md md:border md:border-warm-neutral-dark">
+                    $285,000
+                    <span className="ml-1 text-muted-gray font-normal">plus installation</span>
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Financing (Exterior Only) */}
+            {viewMode === 'exterior' && (
+              <div className="absolute bottom-5 md:bottom-10 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 text-xs md:text-base text-muted-gray pointer-events-auto cursor-help">
+                <span>Financing options available.</span>
+                <Info size={14} className="opacity-60" />
+              </div>
+            )}
           </div>
 
           {/* 3. Mobile-Only Configuration Section (Vertical Stack) */}

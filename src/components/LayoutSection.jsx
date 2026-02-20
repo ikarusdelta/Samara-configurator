@@ -17,11 +17,11 @@ const LayoutSection = () => {
         <section className="flex flex-col gap-6">
             <h3 className="text-xl font-normal tracking-tight">Choose your layout</h3>
             <div className="flex flex-col gap-3">
-                <LayoutCard title="Studio" subtitle="1 bath • 420 gross sq. ft." />
-                <LayoutCard title="One bedroom" subtitle="1 bedroom, 1 bath • 540 gross sq. ft." />
+                <LayoutCard title="Base 1" subtitle="1 bath • 420 gross sq. ft." />
+                {/* <LayoutCard title="One bedroom" subtitle="1 bedroom, 1 bath • 540 gross sq. ft." />
                 <LayoutCard title="Two bedroom" subtitle="2 bedrooms, 1 bath • 690 gross sq. ft." />
-                <LayoutCard title="Backyard XL 8" subtitle="2 bedrooms, 2 baths • 800 gross sq. ft." />
-                <LayoutCard title="Backyard XL 10" subtitle="2 bedrooms, 2 baths • 960 gross sq. ft." selected={true} />
+                <LayoutCard title="Backyard XL 8" subtitle="2 bedrooms, 2 baths • 800 gross sq. ft." /> */}
+                <LayoutCard title="Base 1+" subtitle="2 bedrooms, 2 baths • 960 gross sq. ft." selected={true} />
             </div>
         </section>
     );

@@ -34,7 +34,7 @@ const RightPanel = () => {
             <LayoutSection />
 
             {/* Cladding Material */}
-            <section className="flex flex-col gap-6">
+            {/* <section className="flex flex-col gap-6">
                 <h3 className="text-xl font-normal tracking-tight">Choose your cladding material</h3>
                 <div className="flex flex-col gap-4">
                     <OptionCard
@@ -53,7 +53,7 @@ const RightPanel = () => {
                         price="+$27,500"
                     />
                 </div>
-            </section>
+            </section> */}
 
             {/* Cladding Color */}
             <ColorSwatchSection
@@ -61,20 +61,20 @@ const RightPanel = () => {
                 options={[
                     { color: '#ffffff', name: 'Bone white', description: 'A warm and simple white. Classic.', selected: true },
                     { color: '#d9d9d9', name: 'Cloud gray', description: 'Light, airy neutral gray.' },
-                    { color: '#e5e1da', name: 'Sandstone', description: 'A soft, sandy beige tone.' },
-                    { color: '#2f3b30', name: 'Forest green', description: 'Deep, muted evergreen.' },
-                    { color: '#3c3631', name: 'Dark bronze', description: 'Rich, earthy charcoal brown.' },
+                    // { color: '#e5e1da', name: 'Sandstone', description: 'A soft, sandy beige tone.' },
+                    // { color: '#2f3b30', name: 'Forest green', description: 'Deep, muted evergreen.' },
+                    // { color: '#3c3631', name: 'Dark bronze', description: 'Rich, earthy charcoal brown.' },
                 ]}
             />
 
             {/* Roof Color */}
-            <ColorSwatchSection
+            {/* <ColorSwatchSection
                 title="Choose your roof color"
                 options={[
                     { color: '#1a1a1a', name: 'Dark bronze', description: 'Extremely versatile, deep and muted.', selected: true },
                     { color: '#f0f0f0', name: 'Solar', description: 'Clean solar-ready white.', price: '+$2,500' },
                 ]}
-            />
+            /> */}
 
             {/* Front Windows/Doors */}
             <section className="flex flex-col gap-6">
@@ -94,7 +94,7 @@ const RightPanel = () => {
             </section>
 
             {/* Living Room Windows/Doors */}
-            <section className="flex flex-col gap-6">
+            {/* <section className="flex flex-col gap-6">
                 <h3 className="text-xl font-normal tracking-tight">Choose your living room window or doors</h3>
                 <div className="flex flex-col gap-4">
                     <OptionCard
@@ -108,10 +108,10 @@ const RightPanel = () => {
                         price="+$11,300"
                     />
                 </div>
-            </section>
+            </section> */}
 
             {/* Secondary Bedroom Windows/Doors */}
-            <section className="flex flex-col gap-6 mb-12">
+            {/* <section className="flex flex-col gap-6 mb-12">
                 <h3 className="text-xl font-normal tracking-tight">Choose your secondary bedroom window or doors</h3>
                 <div className="flex flex-col gap-4">
                     <OptionCard
@@ -120,7 +120,7 @@ const RightPanel = () => {
                         selected={true}
                     />
                 </div>
-            </section>
+            </section> */}
         </div>
     );
 };

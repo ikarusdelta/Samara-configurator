@@ -11,11 +11,11 @@ const ColorSwatchSection = ({ title, options }) => {
                 {options.map((opt, i) => (
                     <div key={i} className="flex flex-col items-center gap-3">
                         <div
-                            className={`w-20 h-20 rounded-full border-2 transition-all cursor-pointer p-0.5 ${opt.selected ? 'border-samara-blue shadow-sm' : 'border-transparent hover:scale-105'
+                            className={`w-28 h-[72px] rounded-xl border-2 transition-all cursor-pointer p-1 ${opt.selected ? 'border-samara-blue shadow-sm' : 'border-transparent hover:scale-105'
                                 }`}
                         >
                             <div
-                                className="w-full h-full rounded-full border border-black/10 shadow-inner"
+                                className="w-full h-full rounded-lg border border-black/10 shadow-inner"
                                 style={{ backgroundColor: opt.color }}
                             />
                         </div>
