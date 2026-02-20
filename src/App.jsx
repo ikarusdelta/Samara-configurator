@@ -142,7 +142,7 @@ const App = () => {
               {/* Nav Items */}
               <nav className="flex flex-col">
                 <div className="flex flex-col gap-0.5 pb-3">
-                  <NavItem icon={<Home size={16} />} label="Backyard" />
+                  <NavItem icon={<Home size={16} />} label="Cabin" />
                   <NavItem icon={<Layers size={16} />} label="Models" hasArrow />
                   <NavItem icon={<Info size={16} />} label="How it works" />
                   <NavItem icon={<DollarSign size={16} />} label="Financing" />

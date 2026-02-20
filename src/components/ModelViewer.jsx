@@ -100,7 +100,7 @@ function CameraHandler({ viewIndex, viewMode, distance, onInteraction }) {
             enablePan={true}
             screenSpacePanning={true}
             minPolarAngle={viewMode === 'interior' ? 0.01 : 10 * Math.PI / 180}
-            maxPolarAngle={viewMode === 'interior' ? 0.01 : Math.PI * 0.55}
+            maxPolarAngle={viewMode === 'interior' ? Math.PI * 0.2 : Math.PI * 0.55}
             minDistance={distance}
             maxDistance={distance}
             onStart={() => {
