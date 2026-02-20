@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Regola-Light', 'Regola', 'Outfit', ui-sans-serif, system-ui, sans-serif;
+  --color-warm-neutral-light: #f7f7f0;
+  --color-warm-neutral-dark: #eeebe6;
+  --color-right-panel-bg: #fdfdf7;
+  --color-charcoal: #1c1c1c;
+  --color-samara-blue: #33abf9;
+  --color-muted-gray: #989894;
+  --color-subtext-gray: #999998;
+  --color-card-bg: #f7f7f0;
+  --color-card-hover: #fffffd;
+}
+
+@layer base {
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap');
+
+  body {
+    @apply m-0 p-0 overflow-hidden font-sans text-charcoal bg-white;
+  }
+
+  * {
+    line-height: 1.33 !important;
+  }
+}
+
+/* Custom Scrollbar for Right Panel */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
