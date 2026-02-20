@@ -36,10 +36,10 @@ const App = () => {
           </button>
 
           {/* 2. 3D Container (Image 1 Parity: Sticky on mobile) */}
-          <div className="relative h-[35dvh] md:h-full sticky top-0 md:relative bg-warm-neutral-light overflow-hidden shrink-0 group z-30">
+          <div className="relative h-[40dvh] md:h-full sticky top-0 md:relative bg-warm-neutral-light overflow-hidden shrink-0 group z-30">
             {/* Logo (Desktop Only) */}
             <div className="absolute top-10 left-10 z-[35] hidden md:block">
-              <h1 className="text-2xl font-normal tracking-tight">Samara</h1>
+              <img src="/logo/logo-image.png" alt="" className='w-25 h-fit' />
             </div>
 
             {/* View Mode Toggle (Fixed on top of canvas) */}
@@ -152,7 +152,7 @@ const App = () => {
                 <div className="h-px bg-black/5 mx-2 my-1" />
 
                 <div className="flex flex-col gap-0.5 pt-1">
-                  <NavItem icon={<Building2 size={16} />} label="Visit Samara" />
+                  <NavItem icon={<Building2 size={16} />} label="Visit Base Habitation" />
                   <NavItem icon={<PhoneCall size={16} />} label="Contact us" />
                   <NavItem icon={<Building2 size={16} />} label="Multifamily" />
                 </div>
@@ -160,7 +160,7 @@ const App = () => {
 
               {/* Brand Footer */}
               <div className="mt-2 pt-2 border-t border-black/5 flex justify-center">
-                <span className="text-lg font-normal tracking-tight text-muted-gray/40">Samara</span>
+                <span className="text-lg font-normal tracking-tight text-muted-gray/40">Base Habitation</span>
               </div>
             </div>
           </div>

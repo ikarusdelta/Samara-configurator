@@ -6,18 +6,18 @@ import OptionCard from './OptionCard';
 export const TitleSection = ({ className = "" }) => (
     <section className={`flex flex-col gap-6 ${className}`}>
         <h2 className="text-[28px] md:text-[32px] font-normal leading-tight tracking-tight text-charcoal">
-            Design your Backyard
+            Design your Cabin
         </h2>
         <div className="flex flex-col gap-5">
             <p className="text-[18px] md:text-[20px] text-muted-gray font-normal leading-relaxed">
-                Make it yours. From layout to cladding and solar to finishes, every detail is up to you.
+                Make it yours. From layout to cladding and other options.
             </p>
-            <div className="flex flex-col gap-0.5">
+            {/* <div className="flex flex-col gap-0.5">
                 <p className="text-[14px] md:text-[16px] text-muted-gray font-normal">Don't want to start with a design?</p>
                 <a href="#" className="text-samara-blue text-[14px] md:text-[16px] font-normal inline-flex items-center gap-1">
                     Check availability for your property
                 </a>
-            </div>
+            </div> */}
         </div>
     </section>
 );
@@ -78,49 +78,49 @@ const RightPanel = () => {
 
             {/* Front Windows/Doors */}
             <section className="flex flex-col gap-6">
-                <h3 className="text-xl font-normal tracking-tight">Choose your front window or doors</h3>
+                <h3 className="text-xl font-normal tracking-tight">Choose your Window Type</h3>
                 <div className="flex flex-col gap-4">
                     <OptionCard
-                        title="Casement window"
+                        title="Wood window"
                         subtitle="5' x 5'"
                         price="-$11,300"
                     />
                     <OptionCard
-                        title="Double doors"
-                        subtitle={"5' x 6'8\" glass doors"}
+                        title="Aluminium window"
+                        subtitle={"5' x 6'8\""}
                         selected={true}
                     />
                 </div>
             </section>
 
             {/* Living Room Windows/Doors */}
-            {/* <section className="flex flex-col gap-6">
-                <h3 className="text-xl font-normal tracking-tight">Choose your living room window or doors</h3>
+            <section className="flex flex-col gap-6">
+                <h3 className="text-xl font-normal tracking-tight">Choose your Interior Cabinet Style</h3>
                 <div className="flex flex-col gap-4">
                     <OptionCard
-                        title="Casement window"
-                        subtitle="5' x 5'"
+                        title="Stripped Down"
+                        // subtitle="5' x 5'"
                         selected={true}
                     />
                     <OptionCard
-                        title="Double doors"
-                        subtitle={"5' x 6'8\" glass doors"}
+                        title="Full"
+                        // subtitle={"5' x 6'8\" glass doors"}
                         price="+$11,300"
                     />
                 </div>
-            </section> */}
+            </section>
 
             {/* Secondary Bedroom Windows/Doors */}
-            {/* <section className="flex flex-col gap-6 mb-12">
-                <h3 className="text-xl font-normal tracking-tight">Choose your secondary bedroom window or doors</h3>
+            <section className="flex flex-col gap-6 mb-12">
+                <h3 className="text-xl font-normal tracking-tight">Choose your Additional Options</h3>
                 <div className="flex flex-col gap-4">
                     <OptionCard
-                        title="Casement window"
+                        title="Wooden Deck"
                         subtitle="5' x 5'"
                         selected={true}
                     />
                 </div>
-            </section> */}
+            </section>
         </div>
     );
 };
