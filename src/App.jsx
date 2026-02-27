@@ -38,7 +38,7 @@ const App = () => {
           {/* 2. 3D Container (Image 1 Parity: Sticky on mobile) */}
           <div className="relative h-[40dvh] md:h-full sticky top-0 md:relative bg-warm-neutral-light overflow-hidden shrink-0 group z-30">
             {/* Logo (Desktop Only) */}
-            <div className="absolute top-10 left-10 z-[35] hidden md:block">
+            <div className="absolute top-5 left-5 lg:left-10 z-[35] hidden md:block">
               <img src="/logo/logo-image.png" alt="" className='w-25 h-fit' />
             </div>
 
@@ -47,7 +47,7 @@ const App = () => {
               <div className="flex bg-white/90 backdrop-blur-md p-0.5 md:p-1 rounded-full shadow-lg border border-black/5 pointer-events-auto">
                 <button
                   onClick={() => { setViewMode('exterior'); setViewIndex(0); }}
-                  className={`px-4 py-1.5 md:px-6 md:py-2 rounded-full text-[13px] md:text-sm font-medium transition-all ${viewMode === 'exterior'
+                  className={`px-4 py-1.5 md:px-6 md:py-2 rounded-full text-[13px] md:text-sm  transition-all ${viewMode === 'exterior'
                     ? 'bg-charcoal text-white shadow-sm'
                     : 'text-charcoal/60 hover:text-charcoal hover:bg-black/5'
                     }`}
@@ -56,7 +56,7 @@ const App = () => {
                 </button>
                 <button
                   onClick={() => setViewMode('interior')}
-                  className={`px-4 py-1.5 md:px-6 md:py-2 rounded-full text-[13px] md:text-sm font-medium transition-all ${viewMode === 'interior'
+                  className={`px-4 py-1.5 md:px-6 md:py-2 rounded-full text-[13px] md:text-sm  transition-all ${viewMode === 'interior'
                     ? 'bg-charcoal text-white shadow-sm'
                     : 'text-charcoal/60 hover:text-charcoal hover:bg-black/5'
                     }`}

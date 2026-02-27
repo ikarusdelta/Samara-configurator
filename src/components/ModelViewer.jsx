@@ -1,6 +1,6 @@
-import React, { Suspense, useRef, useEffect, useState, useMemo } from 'react';
+import React, { Suspense, useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Center, useGLTF, PerspectiveCamera, Environment, Html, useProgress } from '@react-three/drei';
+import { OrbitControls, Center, useGLTF, PerspectiveCamera, Environment, Html, useProgress, ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
 
 const VIEWPOINTS_AZIMUTH = [
@@ -10,20 +10,32 @@ const VIEWPOINTS_AZIMUTH = [
     Math.PI * 1.75,  // 315 deg
 ];
 
-function Loader() {
-    const { progress } = useProgress();
+// Rendered OUTSIDE the Canvas — useProgress hooks into a global Zustand store so this works fine.
+function LoadingOverlay() {
+    const { active, progress } = useProgress();
+    const [visible, setVisible] = useState(true);
+
+    useEffect(() => {
+        if (!active && progress >= 100) {
+            const t = setTimeout(() => setVisible(false), 400);
+            return () => clearTimeout(t);
+        }
+    }, [active, progress]);
+
+    if (!visible) return null;
+
     return (
-        <Html center>
-            <div className="flex flex-col items-center w-[200px] md:w-[240px]">
-                {/* Progress bar container */}
-                <div className="w-full h-1 bg-black/5 rounded-full overflow-hidden backdrop-blur-sm border border-black/5">
-                    <div
-                        className="h-full bg-black transition-all duration-300 ease-out"
-                        style={{ width: `${progress}%` }}
-                    />
-                </div>
+        <div
+            className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none"
+            style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.4s ease-out' }}
+        >
+            <div className="w-[200px] md:w-[240px] h-1 bg-black/5 rounded-full overflow-hidden backdrop-blur-sm border border-black/5">
+                <div
+                    className="h-full bg-black transition-all duration-300 ease-out"
+                    style={{ width: `${progress}%` }}
+                />
             </div>
-        </Html>
+        </div>
     );
 }
 
@@ -100,7 +112,7 @@ function CameraHandler({ viewIndex, viewMode, distance, onInteraction }) {
             enablePan={true}
             screenSpacePanning={true}
             minPolarAngle={viewMode === 'interior' ? 0.01 : 10 * Math.PI / 180}
-            maxPolarAngle={viewMode === 'interior' ? Math.PI * 0.2 : Math.PI * 0.55}
+            maxPolarAngle={viewMode === 'interior' ? Math.PI * 0.2 : Math.PI * 0.45}
             minDistance={distance}
             maxDistance={distance}
             onStart={() => {
@@ -153,32 +165,41 @@ function Model({ url, visible = true, onLoaded }) {
     return <primitive object={scene} visible={visible} />;
 }
 
-const SceneContent = ({ viewMode, onHeightChange, onDistanceChange, isFitDone, setIsFitDone, cameraRef, modelHeight }) => {
+const SceneContent = ({ viewMode, onHeightChange, onDistanceChange, onModelMaxSizeChange, modelMaxSize, cameraRef, modelHeight, onReady }) => {
     const { size, camera: threeCamera } = useThree();
 
+    // Step 1: On model load, measure, cache size, and enable casting shadows on all meshes.
     const handleModelLoaded = useMemo(() => (scene) => {
-        if (isFitDone) return;
-
         const box = new THREE.Box3().setFromObject(scene);
         const sizeBox = box.getSize(new THREE.Vector3());
+        onHeightChange(sizeBox.y);
+        onModelMaxSizeChange(Math.max(sizeBox.x, sizeBox.y, sizeBox.z));
+        // Enable shadow casting on every mesh in the model
+        scene.traverse((child) => {
+            if (child.isMesh) {
+                child.castShadow = true;
+                child.receiveShadow = true;
+            }
+        });
+    }, [onHeightChange, onModelMaxSizeChange]);
 
-        const h = sizeBox.y;
-        onHeightChange(h);
+    // Step 2: Recalculate distance whenever canvas size OR cached model size changes.
+    // onReady is called only on the first successful fit so the canvas can fade in.
+    const readyCalled = useRef(false);
+    useEffect(() => {
+        if (!modelMaxSize) return;
 
-        const maxSize = Math.max(sizeBox.x, sizeBox.y, sizeBox.z);
         const aspect = size.width / size.height;
-
         const fov = threeCamera.fov * (Math.PI / 180);
-        const fitHeightDistance = maxSize / (2 * Math.tan(fov / 2));
+        const fitHeightDistance = modelMaxSize / (2 * Math.tan(fov / 2));
         const fitWidthDistance = fitHeightDistance / aspect;
+        const calculatedDistance = 2.2 * Math.max(fitHeightDistance, fitWidthDistance);
 
-        const calculatedDistance = 1.5 * Math.max(fitHeightDistance, fitWidthDistance);
         onDistanceChange(calculatedDistance);
 
         if (cameraRef.current) {
             const initialAzimuth = VIEWPOINTS_AZIMUTH[0];
             const initialPolar = Math.PI * 0.35;
-
             cameraRef.current.position.set(
                 calculatedDistance * Math.sin(initialPolar) * Math.sin(initialAzimuth),
                 calculatedDistance * Math.cos(initialPolar),
@@ -186,11 +207,15 @@ const SceneContent = ({ viewMode, onHeightChange, onDistanceChange, isFitDone, s
             );
             cameraRef.current.lookAt(0, 0, 0);
         }
-        setIsFitDone(true);
-    }, [size.width, size.height, threeCamera.fov, isFitDone, onHeightChange, onDistanceChange, setIsFitDone, cameraRef]);
+
+        if (!readyCalled.current) {
+            readyCalled.current = true;
+            onReady?.();
+        }
+    }, [modelMaxSize, size.width, size.height, threeCamera.fov, onDistanceChange, cameraRef, onReady]);
 
     return (
-        <Suspense fallback={<Loader />}>
+        <Suspense fallback={null}>
             <Center key="main-center">
                 <Model url="/models/Base.glb" onLoaded={handleModelLoaded} />
                 <AnimatedModel
@@ -199,10 +224,14 @@ const SceneContent = ({ viewMode, onHeightChange, onDistanceChange, isFitDone, s
                 />
             </Center>
 
-            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -modelHeight / 2 - 0.01, 0]} receiveShadow>
-                <planeGeometry args={[500, 500]} />
-                <shadowMaterial transparent opacity={0.1} />
-            </mesh>
+            <ContactShadows
+                position={[0, -modelHeight / 2 - 0.01, 0]}
+                opacity={0.45}
+                scale={60}
+                blur={2.5}
+                far={modelHeight * 2 || 10}
+                color="#000000"
+            />
 
             <Environment preset="city" />
         </Suspense>
@@ -212,35 +241,51 @@ const SceneContent = ({ viewMode, onHeightChange, onDistanceChange, isFitDone, s
 const ModelViewer = ({ viewIndex = 0, viewMode = 'exterior' }) => {
     const cameraRef = useRef();
     const [cameraDistance, setCameraDistance] = useState(30);
-    const [isFitDone, setIsFitDone] = useState(false);
+    const [modelMaxSize, setModelMaxSize] = useState(null);
     const [modelHeight, setModelHeight] = useState(0);
+    const [modelReady, setModelReady] = useState(false);
+
+    const handleReady = useCallback(() => setModelReady(true), []);
 
     return (
-        <div className="w-full h-full cursor-grab active:cursor-grabbing">
-            <Canvas shadows dpr={[1, 2]}>
-                <PerspectiveCamera makeDefault ref={cameraRef} fov={35} position={[30, 25, 30]} />
+        <div className="relative w-full h-full">
+            {/* Loader shown while GLB is fetching, outside Canvas so it's always visible */}
+            <LoadingOverlay />
 
-                <ambientLight intensity={0.7} />
-                <directionalLight
-                    position={[10, 25, 10]}
-                    intensity={1.2}
-                    castShadow
-                    shadow-mapSize={2048}
-                />
-                <pointLight position={[-15, 15, -15]} intensity={0.5} />
+            {/* Canvas fades in once the camera is positioned — no abrupt size jump */}
+            <div
+                className="w-full h-full cursor-grab active:cursor-grabbing"
+                style={{
+                    opacity: modelReady ? 1 : 0,
+                    transition: modelReady ? 'opacity 0.75s ease-in' : 'none',
+                }}
+            >
+                <Canvas shadows dpr={[1, 2]} gl={{ logarithmicDepthBuffer: true }}>
+                    <PerspectiveCamera makeDefault ref={cameraRef} fov={17} near={0.1} far={2000} position={[30, 25, 30]} />
 
-                <SceneContent
-                    viewMode={viewMode}
-                    onHeightChange={setModelHeight}
-                    onDistanceChange={setCameraDistance}
-                    isFitDone={isFitDone}
-                    setIsFitDone={setIsFitDone}
-                    cameraRef={cameraRef}
-                    modelHeight={modelHeight}
-                />
+                    <ambientLight intensity={0.7} />
+                    <directionalLight
+                        position={[10, 25, 10]}
+                        intensity={1.2}
+                        castShadow
+                        shadow-mapSize={2048}
+                    />
+                    <pointLight position={[-15, 15, -15]} intensity={0.5} />
 
-                <CameraHandler viewIndex={viewIndex} viewMode={viewMode} distance={cameraDistance} />
-            </Canvas>
+                    <SceneContent
+                        viewMode={viewMode}
+                        onHeightChange={setModelHeight}
+                        onDistanceChange={setCameraDistance}
+                        onModelMaxSizeChange={setModelMaxSize}
+                        modelMaxSize={modelMaxSize}
+                        cameraRef={cameraRef}
+                        modelHeight={modelHeight}
+                        onReady={handleReady}
+                    />
+
+                    <CameraHandler viewIndex={viewIndex} viewMode={viewMode} distance={cameraDistance} />
+                </Canvas>
+            </div>
         </div>
     );
 };

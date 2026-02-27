@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: 'Regola-Light', 'Regola', 'Outfit', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --color-warm-neutral-light: #f7f7f0;
   --color-warm-neutral-dark: #eeebe6;
   --color-right-panel-bg: #fdfdf7;
@@ -14,7 +14,7 @@
 }
 
 @layer base {
-  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
   body {
     @apply m-0 p-0 overflow-hidden font-sans text-charcoal bg-white;
