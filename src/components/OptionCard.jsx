@@ -1,11 +1,14 @@
 import React from 'react';
 
-const OptionCard = ({ title, subtitle, price, selected, description, list }) => {
+const OptionCard = ({ title, subtitle, price, selected, description, list, onClick }) => {
     return (
-        <div className={`p-6 rounded-2xl flex flex-col gap-4 border transition-all ${selected
-            ? 'border-samara-blue bg-white shadow-sm ring-1 ring-samara-blue/20'
-            : 'border-transparent bg-card-bg hover:bg-card-hover'
-            }`}>
+        <div
+            onClick={onClick}
+            className={`p-6 rounded-2xl flex flex-col gap-4 border transition-all cursor-pointer ${selected
+                ? 'border-samara-blue bg-white shadow-sm ring-1 ring-samara-blue/20'
+                : 'border-transparent bg-card-bg hover:bg-card-hover'
+                }`}
+        >
             <div className="flex items-center justify-between w-full">
                 <div className="flex flex-col gap-0">
                     <h4 className="text-lg font-normal tracking-tight">{title}</h4>

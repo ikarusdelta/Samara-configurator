@@ -8,6 +8,14 @@ const App = () => {
   const [viewMode, setViewMode] = useState('exterior'); // 'exterior' or 'interior'
   const [viewIndex, setViewIndex] = useState(0);
 
+  // Configuration state
+  const [selectedColor, setSelectedColor] = useState('light'); // 'light' or 'dark'
+  const [selectedBed, setSelectedBed] = useState('normal');     // 'normal' or 'bunk'
+  const [selectedCabinet, setSelectedCabinet] = useState('stripped'); // 'stripped' or 'full'
+  const [selectedLayout, setSelectedLayout] = useState('base1'); // 'base1' or 'base1plus'
+
+  const config = { selectedColor, selectedBed, selectedCabinet, selectedLayout };
+
   const nextView = () => setViewIndex((prev) => (prev + 1) % 4);
   const prevView = () => setViewIndex((prev) => (prev - 1 + 4) % 4);
 
@@ -66,7 +74,7 @@ const App = () => {
               </div>
             </div>
 
-            <ModelViewer viewIndex={viewIndex} viewMode={viewMode} />
+            <ModelViewer viewIndex={viewIndex} viewMode={viewMode} config={config} />
 
             {/* Navigation Arrows (Exterior Only) */}
             {viewMode === 'exterior' && (
@@ -111,13 +119,25 @@ const App = () => {
 
           {/* 3. Mobile-Only Configuration Section (Vertical Stack) */}
           <div className="md:hidden bg-right-panel-bg">
-            <RightPanel />
+            <RightPanel
+              config={config}
+              onColorChange={setSelectedColor}
+              onBedChange={setSelectedBed}
+              onCabinetChange={setSelectedCabinet}
+              onLayoutChange={setSelectedLayout}
+            />
           </div>
         </div>
 
         {/* Desktop-Only Right Panel (Scrollable Side) */}
         <div className="hidden md:block w-full md:w-[50%] bg-right-panel-bg overflow-y-auto custom-scrollbar border-l border-warm-neutral-dark">
-          <RightPanel />
+          <RightPanel
+            config={config}
+            onColorChange={setSelectedColor}
+            onBedChange={setSelectedBed}
+            onCabinetChange={setSelectedCabinet}
+            onLayoutChange={setSelectedLayout}
+          />
         </div>
       </div>
 

@@ -1,17 +1,21 @@
 import React from 'react';
 
-const ColorSwatchSection = ({ title, options }) => {
-    const selectedOption = options.find(o => o.selected) || options[0];
+const ColorSwatchSection = ({ title, options, selectedId, onChange }) => {
+    const selectedOption = options.find(o => o.id === selectedId) || options[0];
 
     return (
         <section className="flex flex-col gap-6">
             <h3 className="text-xl font-normal tracking-tight">{title}</h3>
 
             <div className="flex flex-wrap gap-4">
-                {options.map((opt, i) => (
-                    <div key={i} className="flex flex-col items-center gap-3">
+                {options.map((opt) => (
+                    <div
+                        key={opt.id}
+                        className="flex flex-col items-center gap-3 cursor-pointer"
+                        onClick={() => onChange(opt.id)}
+                    >
                         <div
-                            className={`w-28 h-[72px] rounded-xl border-2 transition-all cursor-pointer p-1 ${opt.selected ? 'border-samara-blue shadow-sm' : 'border-transparent hover:scale-105'
+                            className={`w-28 h-[72px] rounded-xl border-2 transition-all p-1 ${opt.id === selectedId ? 'border-samara-blue shadow-sm' : 'border-transparent hover:scale-105'
                                 }`}
                         >
                             <div

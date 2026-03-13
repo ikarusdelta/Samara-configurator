@@ -126,12 +126,13 @@ function CameraHandler({ viewIndex, viewMode, distance, onInteraction }) {
 
 function AnimatedModel({ url, visible = true, onLoaded }) {
     const { scene } = useGLTF(url);
+    const cloned = useMemo(() => scene.clone(true), [scene]);
     const groupRef = useRef();
     const [shouldRender, setShouldRender] = useState(visible);
 
     useEffect(() => {
-        if (scene && onLoaded) onLoaded(scene);
-    }, [scene, onLoaded]);
+        if (cloned && onLoaded) onLoaded(cloned);
+    }, [cloned, onLoaded]);
 
     useFrame((state, delta) => {
         if (!groupRef.current) return;
@@ -152,21 +153,43 @@ function AnimatedModel({ url, visible = true, onLoaded }) {
 
     return (
         <group ref={groupRef}>
-            {shouldRender && <primitive object={scene} />}
+            {shouldRender && <primitive object={cloned} />}
         </group>
     );
 }
 
 function Model({ url, visible = true, onLoaded }) {
     const { scene } = useGLTF(url);
+    const cloned = useMemo(() => scene.clone(true), [scene]);
     useEffect(() => {
-        if (scene && onLoaded) onLoaded(scene);
-    }, [scene, onLoaded]);
-    return <primitive object={scene} visible={visible} />;
+        if (cloned && onLoaded) onLoaded(cloned);
+    }, [cloned, onLoaded]);
+    return <primitive object={cloned} visible={visible} />;
 }
 
-const SceneContent = ({ viewMode, onHeightChange, onDistanceChange, onModelMaxSizeChange, modelMaxSize, cameraRef, modelHeight, onReady }) => {
+const MODEL_URLS = {
+    base: {
+        light: '/models/newmodels/Light_Base.glb',
+        dark: '/models/newmodels/Black_Base.glb',
+    },
+    roof: {
+        light: '/models/newmodels/Light_Roof.glb',
+        dark: '/models/newmodels/Black_Roof.glb',
+    },
+    bed: {
+        normal: '/models/newmodels/Normal_Bed.glb',
+        bunk: '/models/newmodels/Bunk_Bed.glb',
+    },
+    kitchen: '/models/newmodels/Kitchen.glb',
+    cabinetDoor: '/models/newmodels/Kitchen_Cabinet_Door.glb',
+};
+
+const SceneContent = ({ viewMode, config, onHeightChange, onDistanceChange, onModelMaxSizeChange, modelMaxSize, cameraRef, modelHeight, onReady }) => {
     const { size, camera: threeCamera } = useThree();
+
+    const baseUrl = MODEL_URLS.base[config.selectedColor] || MODEL_URLS.base.light;
+    const roofUrl = MODEL_URLS.roof[config.selectedColor] || MODEL_URLS.roof.light;
+    const bedUrl = MODEL_URLS.bed[config.selectedBed] || MODEL_URLS.bed.normal;
 
     // Step 1: On model load, measure, cache size, and enable casting shadows on all meshes.
     const handleModelLoaded = useMemo(() => (scene) => {
@@ -174,7 +197,6 @@ const SceneContent = ({ viewMode, onHeightChange, onDistanceChange, onModelMaxSi
         const sizeBox = box.getSize(new THREE.Vector3());
         onHeightChange(sizeBox.y);
         onModelMaxSizeChange(Math.max(sizeBox.x, sizeBox.y, sizeBox.z));
-        // Enable shadow casting on every mesh in the model
         scene.traverse((child) => {
             if (child.isMesh) {
                 child.castShadow = true;
@@ -183,8 +205,16 @@ const SceneContent = ({ viewMode, onHeightChange, onDistanceChange, onModelMaxSi
         });
     }, [onHeightChange, onModelMaxSizeChange]);
 
+    const enableShadows = useCallback((scene) => {
+        scene.traverse((child) => {
+            if (child.isMesh) {
+                child.castShadow = true;
+                child.receiveShadow = true;
+            }
+        });
+    }, []);
+
     // Step 2: Recalculate distance whenever canvas size OR cached model size changes.
-    // onReady is called only on the first successful fit so the canvas can fade in.
     const readyCalled = useRef(false);
     useEffect(() => {
         if (!modelMaxSize) return;
@@ -217,11 +247,23 @@ const SceneContent = ({ viewMode, onHeightChange, onDistanceChange, onModelMaxSi
     return (
         <Suspense fallback={null}>
             <Center key="main-center">
-                <Model url="/models/Base.glb" onLoaded={handleModelLoaded} />
+                {/* Base structure — swaps by color */}
+                <Model key={baseUrl} url={baseUrl} onLoaded={handleModelLoaded} />
+
+                {/* Roof — slides away in interior view, swaps by color */}
                 <AnimatedModel
-                    url="/models/Base_Roof.glb"
+                    key={roofUrl}
+                    url={roofUrl}
                     visible={viewMode === 'exterior'}
+                    onLoaded={enableShadows}
                 />
+
+                {/* Interior models — only visible in interior view */}
+                <Model key={bedUrl} url={bedUrl} visible={viewMode === 'interior'} onLoaded={enableShadows} />
+                <Model url={MODEL_URLS.kitchen} visible={viewMode === 'interior'} onLoaded={enableShadows} />
+                {config.selectedCabinet === 'full' && (
+                    <Model url={MODEL_URLS.cabinetDoor} visible={viewMode === 'interior'} onLoaded={enableShadows} />
+                )}
             </Center>
 
             <ContactShadows
@@ -238,7 +280,7 @@ const SceneContent = ({ viewMode, onHeightChange, onDistanceChange, onModelMaxSi
     );
 };
 
-const ModelViewer = ({ viewIndex = 0, viewMode = 'exterior' }) => {
+const ModelViewer = ({ viewIndex = 0, viewMode = 'exterior', config = {} }) => {
     const cameraRef = useRef();
     const [cameraDistance, setCameraDistance] = useState(30);
     const [modelMaxSize, setModelMaxSize] = useState(null);
@@ -274,6 +316,7 @@ const ModelViewer = ({ viewIndex = 0, viewMode = 'exterior' }) => {
 
                     <SceneContent
                         viewMode={viewMode}
+                        config={config}
                         onHeightChange={setModelHeight}
                         onDistanceChange={setCameraDistance}
                         onModelMaxSizeChange={setModelMaxSize}
@@ -289,5 +332,12 @@ const ModelViewer = ({ viewIndex = 0, viewMode = 'exterior' }) => {
         </div>
     );
 };
+
+// Preload all models for instant switching
+Object.values(MODEL_URLS.base).forEach(url => useGLTF.preload(url));
+Object.values(MODEL_URLS.roof).forEach(url => useGLTF.preload(url));
+Object.values(MODEL_URLS.bed).forEach(url => useGLTF.preload(url));
+useGLTF.preload(MODEL_URLS.kitchen);
+useGLTF.preload(MODEL_URLS.cabinetDoor);
 
 export default ModelViewer;
